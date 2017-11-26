@@ -1,0 +1,51 @@
+---
+title: "Australia's (Possible) Educational Divide"
+author: "Edwin Mellett"
+date: "November 26, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Abstract
+
+A summary of your research proposal, methods and findings. Aim for ~100 words
+
+A comparative study of the effect of student dispositions on mathematics literacy in Australia between public and private schools.
+
+## Introduction
+
+Describe the background to the report.
+Discuss previous work (e.g. OECD reports, academic articles, etc.) that support your hypothesis.
+This is the section where you have the chance to convince the reader that your question is worthwhile.
+
+## Methods
+
+Mention the R packages you have used
+Briefly describe the analytical techniques you have used
+Keep this section short
+
+## Results
+
+Figures:
+Tables, plots and diagrams
+Only include figures that you are going to refer to in the Discussion
+You must have descriptions of the figures (i.e. it must be clear in the text what the figures show and why you have included them), but only include minimal interpretation in this section.
+
+## Discussion
+
+This is where you offer your interpretation of the results
+Use neutral language
+Don’t make sweeping generalisations that aren’t based on evidence
+This section should have your highest word count
+
+## Conclusion
+
+What are the main points to draw from the discussion?
+Is there further investigation warranted?
+
+## References
+
+Does not count towards word count
