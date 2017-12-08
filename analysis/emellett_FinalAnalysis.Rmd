@@ -1,5 +1,5 @@
 ---
-title: "Australia's (Possible) Educational Divide"
+title: "Australia's Educational Divide"
 author: "Edwin Mellett"
 date: "December 8, 2017"
 output: pdf_document
@@ -22,7 +22,7 @@ require(PISAFinal)
 
 ## Abstract
 
-A comparative study of the effect of student dispositions on mathematics literacy in Australia between public and private schools. 
+This report is a comparative study of the effect of student dispositions on mathematics literacy in Australia between public and private schools. There is a noticeable divide between the performance of public and private school students. Supervised machine learning is used to identify which parts of the students’ dispositions are important in determining math literacy. Based on the machine learning generated models, student dispositions of self-efficacy and math anxiety have the greatest effect on math scores. Self-efficacy is more favorable among private school students and could be one of the major reasons private schools outperform public schools in Australia. 
 
 ```{r initial_views, echo=F}
 # Read in data sets
@@ -70,7 +70,7 @@ I am interested in looking at the effect of student disposition on mathematics l
 
 The statistical analyses in this paper were all done using R [@r_lang]. The following R packages were used: h2o [@h2o], data.table [@data_table], ggplot2 [@plot], kableExtra [@kable], and magrittr [@magrittr].  
 
-The machine learning approach in this report is heavily influenced by a paper produced by my professor Jason Signolet and his colleagues [@jason_ML]. A gradient boosted machine (GBM) was used to determine possible variables of importance and k-folds was used for cross-validation. 22 of the survey questions relating to student disposition were used as features for the GBM. The survey questions chosen fell into 3 categories: math self-efficacy, math anxiety, and perceived control. The mathematics literacy scores were calculated as the aggregate of the 5 plausible values (PV1MATH, PV2MATH, PV3MATH, PV4MATH, PV5MATH) weighted by the final student weight (W_FSTUWT).
+The machine learning approach in this report is heavily influenced by a paper produced by my professor Jason Signolet and his colleagues [@jason_ML]. A gradient boosting machine (GBM) was used to determine possible variables of importance and k-folds was used for cross-validation. 22 of the survey questions relating to student disposition were used as features for the GBM. The survey questions chosen fell into 3 categories: math self-efficacy, math anxiety, and perceived control. The mathematics literacy scores were calculated as the aggregate of the 5 plausible values (PV1MATH, PV2MATH, PV3MATH, PV4MATH, PV5MATH) weighted by the final student weight (W_FSTUWT).
 
 ## Results
 
@@ -113,6 +113,7 @@ ggplot(aus_students, aes(x = math_score)) +
   facet_grid(public ~ ., labeller = as_labeller(school_types))
 ```
 **Figure 2:** A density plot for public and private schools. The dashed line represents the weighted average.  
+\pagebreak
 
 ```{r gbm, echo = F, warning=F, include=FALSE}
 # Run GBM on private school students
@@ -134,7 +135,8 @@ knitr::kable(head(vi_private),
           kable_styling(latex_options = "basic")
 
 ```
-**Table 1:**  
+**Table 1:** The table consists of the variables ranked by their importance based on the best model from the GBM for private schools. ST37 questions are relating to self-efficacy. ST42 questions are relating to math anxiety. ST43 questions focus on the student's perception of their level of control to do well in mathematics.    
+  
 
 \begin{center}
 Public School Variables of Importance
@@ -146,7 +148,7 @@ knitr::kable(head(vi_public),
           kable_styling(latex_options = "basic")
 
 ```
-**Table 2:**  
+**Table 2:** The table is also derived from the best model produced by a GBM. This time, the model was trained using the public school data instead. Note the similarities and differences between the two tables.  
 
 ```{r box_comparison, echo=F}
 # Include weighted mean for box_plots as separate point
@@ -181,14 +183,18 @@ private_plot <- ggplot(private_disposition, aes(x = ST37Q05, y = math_score)) +
 
 cowplot::plot_grid(public_plot, private_plot)
 ```
-
+**Figure 3:** The two plots show a comparison between public and private school scores based on a single survey question: "How confident are you about: Solving an equation like 3x+5= 17". The choices were "Very Confident", "Confident", "Not Confident", or "Not at all Confident". The diamonds represent the weighted average.    
+\linebreak
 \begin{minipage}{0.5\textwidth}
+\begin{center}
 Public: Confidence in Solving Equation
+\end{center}
 \end{minipage}
 \begin{minipage}{0.5\textwidth}
+\begin{center}
 Private: Confidence in Solving Equation
+\end{center}
 \end{minipage}
-**Figure 3:**  
 
 \begin{minipage}{0.5\textwidth}
 ```{r efficacy_breakdown, echo=F}
@@ -211,7 +217,8 @@ knitr::kable(private_efficacy,
 
 ```
 \end{minipage}
-**Table 3:**
+**Table 3:** The two tables show the percentage of students for each answer to the self-efficacy question regarding their confidence in being able to solve equation "3x+5= 17".  
+\linebreak
 
 ```{r disp_vars, echo=F}
 
@@ -245,7 +252,7 @@ efficacy_priv <- ggplot(efficacy, aes(x = graph_knowledge, y = percent, label = 
 cowplot::plot_grid(efficacy_pub, efficacy_priv)
 
 ```
-**Figure 4:**  
+**Figure 4:** The two plots compare the percent of students who are confident in "Understanding graphs presented in newspapers".  
 
 ```{r anxiety, echo = F} 
 # Include weighted mean for box_plots as separate point
@@ -280,7 +287,9 @@ private_plot <- ggplot(private_disposition, aes(x = ST42Q02, y = math_score)) +
 
 cowplot::plot_grid(public_plot, private_plot)
 ```
-**Figure 5:**  
+
+**Figure 5:** The plots above show the breakdown of math literacy levels for public and private school students based on the student's agreement with the following statement: "I am just not good at mathematics." The diamonds represent the weighted average.  
+\linebreak
 
 ```{r enjoyment, echo=F}
 num_public <- aus_public[!is.na(ST29Q04), .N]
@@ -290,7 +299,7 @@ enjoyment <- aus_public[!is.na(ST29Q04), .(percent = .N/num_public), by = (enjoy
 enjoyment_pub <- ggplot(enjoyment, aes(x = enjoy, y = percent, label = percent)) +
   geom_point() +
   labs(title = "Public: Math Enjoyment",
-       x = "Enjoyments Math",
+       x = "Enjoys Math",
        y = "Percent") +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_fill_discrete(guide = F) +
@@ -302,7 +311,7 @@ enjoyment <- aus_private[!is.na(ST29Q04), .(percent = .N/num_private), by = (enj
 enjoyment_priv <- ggplot(enjoyment, aes(x = enjoy, y = percent, label = percent)) +
   geom_point() +
   labs(title = "Private: Math Enjoyment",
-       x = "Enjoyments Math",
+       x = "Enjoys Math",
        y = "Percent") +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_fill_discrete(guide = F) +
@@ -311,19 +320,24 @@ enjoyment_priv <- ggplot(enjoyment, aes(x = enjoy, y = percent, label = percent)
 
 cowplot::plot_grid(enjoyment_pub, enjoyment_priv)
 ```
-**Figure 6:**  
+**Figure 6:** These plots look at the student's response to the following statement: "I do mathematics because I enjoy it."  
 
 ## Discussion
 
-Include towards end of discussion or in the conclusion some of the results from other paper [@buckingham_2000].
+The comparative study started by analyzing the mathematical literacy scores for private and public schools. Australia’s national average for math literacy was `r round(national_avg, 0)`. Public schools had an average math score of `r round(public_avg, 0)`, while private schools had a substantially higher average score of `r round(private_avg, 0)`. Figures 1 and 2 further show how the scores differ between public and private schools. We can see from the outliers in figure 1 that public schools may have a wider range of skill levels to deal with. The highest and lowest scores are from public schools, which could be explained by higher diversity or the simple fact that there are more students in public schools. Figure 2 similarly breaks down the scores for Australian public and private schools. Here we can see the math scores for the two groups follow a mostly normal distribution. It is quite clear that there is a difference among these two groups in terms of math literacy, so it is worth exploring further if student disposition can help explain this difference.  
 
-Australia's national average: `r round(national_avg, 0)`.  
-Average score for public schools: `r round(public_avg, 0)`.  
-Average score for private schools: `r round(private_avg, 0)`.  
+Due to the large number of survey questions regarding student disposition, I chose to use supervised machine learning to determine which questions had the highest relevance in relation to student math scores. Tables 1 and 2 show the top 6 student disposition questions for private and public schools, respectively. In both tables, the variable of the most importance was ST37Q05. The gradient boosting machine rated this feature with a much higher relative importance than any other variable for either of the models. This question asked students how confident they were to solve the equation *3x + 5 = 17*. Questions of this nature deal with the part of a person’s psychological disposition known as self-efficacy. Self-efficacy – belief in oneself -- made up at least 3 of the top 6 variables in terms of importance for public and private schools. The similarities between the two tables continue with 5 variables appearing twice. This is encouraging, because it allows us to compare these similar variables and the effects they have on math literacy.  
+
+Since the self-efficacy question on confidence of solving an equation had the highest level of importance for both models, it is a logical place to start in comparing student dispositions and their effects between Australia’s public and private schools. Figure 3 shows the math literacy breakdown for public and private schools for each of the possible answers to the survey question. While public school scores are slightly lower, the two plots look similar. Students who are very confident in their belief to solve such a problem score quite well regardless of which type of school they are from. And on the other end, if a student says he or she is not at all confident in solving such a problem then his or her score is quite low. This plot shows a correlation between self-efficacy and math scores, but is missing a key piece of the puzzle. Table 3 is a further analysis of student confidence in solving the equation. The two tables show a noticeable difference in self-efficacy between public and private schools. Over 60% of private school students are very confident in their ability to solve this problem, while only 45% of public school students feel this way. This helps explain why the public and private school math literacy scores are substantially different even though the plots in figure 3 looked so similar. 
+Figure 4 continues to look at self-efficacy. Instead of assessing students’ confidence levels in solving equations this question focused on understanding graphs presented in newspapers. Figure 4 plots the percent of students that fall into each of the four confidence levels. This plot also highlights the difference in self-efficacy between public and private school students with only 33% of public school students being very confident in comparison to 40% from private schools.  
+
+Apart from self-efficacy, math anxiety ranked fairly high as an importance variable for both models. The specific survey question was asking for a level of agreement with the statement, “I am just not good at mathematics”. The results in figure 5 show math anxiety as another psychological disposition that effects students’ math scores from public and private schools in a similar manner. 
+
+The final figure, figure 6, focuses on the student’s enjoyment level of mathematics. Note, this was not one of the more important variables for either model. Only about 10% of students do mathematics because they enjoy it. In fact, a majority of students disagree or strongly disagree with this statement. The breakdown of math anxiety for public and private schools is nearly identical in this figure. This is an interesting contrast to self-efficacy where there was a noticeable contrast between the two groups. 
+
 
 ## Conclusion
 
-What are the main points to draw from the discussion?
-Is there further investigation warranted?
+The comparative study of student dispositions effect on mathematics literacy has yielded some intriguing results. Student disposition seems to have the same effect on students regardless of the school system. However, private school students appear to have higher beliefs in their ability to solve and understand math problems. The reason for this higher self-efficacy is unknown and could warrant further research of its own. One report on Australian PISA data stated, “students in the Catholic or independent school sectors bring with them an advantage from their socioeconomic background that is not as strongly characteristic of students in the government school sector. In previous cycles of PISA, the OECD has noted that the differences between public and private schools disappear once similar adjustments are made in most OECD countries” [@thomson_2013]. In other words, private school students perform better, because a higher percentage of them have a socioeconomic advantage compared to public school students and this explains the difference in test scores. Further research could be conducted to see if student disposition, specifically self-efficacy, is directly related to socioeconomic status. This statistical analysis has garnered a few fresh insights into what could be causing the gap in academic performance between public and private schools.
 
 ## References
