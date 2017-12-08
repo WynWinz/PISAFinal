@@ -1,45 +1,325 @@
 ---
 title: "Australia's (Possible) Educational Divide"
 author: "Edwin Mellett"
-date: "November 26, 2017"
+date: "December 8, 2017"
 output: pdf_document
+citation_package: none
+bibliography: 
+ - bibliography.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.width=7, fig.height=4)
+# Libraries used
+library(kableExtra)
+library(PISA2012lite)
+library(data.table)
+library(magrittr)
+library(ggplot2)
+library(h2o)
+require(PISAFinal)
 ```
 
 ## Abstract
 
-A summary of your research proposal, methods and findings. Aim for ~100 words
+A comparative study of the effect of student dispositions on mathematics literacy in Australia between public and private schools. 
 
-A comparative study of the effect of student dispositions on mathematics literacy in Australia between public and private schools.
+```{r initial_views, echo=F}
+# Read in data sets
+students <- setDT(as.data.frame(student2012))
+
+# Create view for Australian students
+aus_students <- students[factor(CNT) %in% "Australia"]
+
+# Aggregate the math plausible values to form a new column: math_score
+score <- aus_students[, .(STIDSTD, PV1MATH, PV2MATH, PV3MATH, PV4MATH, PV5MATH)]
+pv_avg <- score[, math_score := rowMeans(.SD), by = STIDSTD]
+pv_avg <- pv_avg[, math_score]
+aus_students$math_score <- pv_avg
+
+# Calculate national average math score
+national_avg <- weighted.mean(aus_students[, math_score],
+                              aus_students$W_FSTUWT / sum(aus_students$W_FSTUWT))
+
+# Create view for public school students
+public_school_codes <- c("AUS0102", "AUS0205", "AUS0308", "AUS0411",
+                         "AUS0514", "AUS0617", "AUS0720", "AUS0823")
+
+aus_public <- aus_students[STRATUM %in% public_school_codes]
+
+# Add a column that is true or false for whether or not the student attends a public school
+aus_students <- aus_students[, public := (STRATUM %in% public_school_codes)]
+
+# Calculate average math score for public school students
+public_avg <- weighted.mean(aus_public[, math_score], aus_public$W_FSTUWT / sum(aus_students$W_FSTUWT))
+
+# Create view for private school students
+aus_private <- aus_students[!(STRATUM %in% public_school_codes)]
+
+# Calculate average math score for public school students
+private_avg <- weighted.mean(aus_private[, math_score], aus_private$W_FSTUWT / sum(aus_students$W_FSTUWT))
+```
 
 ## Introduction
 
-Describe the background to the report.
-Discuss previous work (e.g. OECD reports, academic articles, etc.) that support your hypothesis.
-This is the section where you have the chance to convince the reader that your question is worthwhile.
+The data for this report comes from the Programme for International Student Assessment (PISA) 2012 results. PISA occurs every three years and tests 15 year-old students around the world in math, science, and reading [@about_pisa]. The data collected includes test scores, school information, and student and parent information. Part of PISA includes a questionnaire for students with questions ranging from demographics to psychological dispositions.  
+
+I am interested in looking at the effect of student disposition on mathematics literacy in Australia between public and private schools. In this case, student disposition can be thought of as the way a student feels about mathematics and his or her mindset and confidence towards solving math problems. There have been a few interesting findings relating to the effects of student dispositions that show a student’s self-efficacy has a noticeable effect on math scores [@jason_ML]. Another study conducted in Australia found “private schools achieve better results than public schools” [@buckingham_2000]. Buckingham’s measures of achievement included test scores and high school graduation percentages. Since PISA contains a plethora of useful information, we can expand on previous research to see if differences in psychological dispositions between public and private school students could help explain the performance gap that Buckingham and others have talked about.
 
 ## Methods
 
-Mention the R packages you have used
-Briefly describe the analytical techniques you have used
-Keep this section short
+The statistical analyses in this paper were all done using R [@r_lang]. The following R packages were used: h2o [@h2o], data.table [@data_table], ggplot2 [@plot], kableExtra [@kable], and magrittr [@magrittr].  
+
+The machine learning approach in this report is heavily influenced by a paper produced by my professor Jason Signolet and his colleagues [@jason_ML]. A gradient boosted machine (GBM) was used to determine possible variables of importance and k-folds was used for cross-validation. 22 of the survey questions relating to student disposition were used as features for the GBM. The survey questions chosen fell into 3 categories: math self-efficacy, math anxiety, and perceived control. The mathematics literacy scores were calculated as the aggregate of the 5 plausible values (PV1MATH, PV2MATH, PV3MATH, PV4MATH, PV5MATH) weighted by the final student weight (W_FSTUWT).
 
 ## Results
 
-Figures:
-Tables, plots and diagrams
-Only include figures that you are going to refer to in the Discussion
-You must have descriptions of the figures (i.e. it must be clear in the text what the figures show and why you have included them), but only include minimal interpretation in this section.
+```{r school_types_boxplot, echo=F}
+# Include weighted mean for box_plots as separate point
+weighted_points <- aus_students[!is.na(public), .(w_mean = weighted.mean(math_score, W_FSTUWT/sum(W_FSTUWT))), 
+                                by = public]
+
+# Display scores of public and private schools
+ggplot(aus_students, aes(x = public, y = math_score)) +
+  geom_boxplot() +
+  geom_point(data = weighted_points, aes(x = public, y = w_mean),
+             shape = 23, size = 3, fill = "black", inherit.aes=FALSE) +
+  labs(title = "Math Literacy Scores",
+       x = "School Type",
+       y = "Math Score") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_x_discrete(labels = c("Private","Public")) +
+  scale_fill_discrete(guide = F)
+
+school_types <- c(
+                  `FALSE` = "Private",
+                  `TRUE` = "Public"
+)
+
+
+
+```
+**Figure 1:** Breakdown of mathematics literacy scores based on school type. The diamond represents the weighted average.  
+
+```{r school_types_density, echo=F, warning=F}
+ggplot(aus_students, aes(x = math_score)) +
+  geom_density(aes(weight = W_FSTUWT/sum(W_FSTUWT))) +
+  geom_vline(data=weighted_points, aes(xintercept=w_mean),
+             linetype="dashed") +
+  labs(title = "Public and Private Math Scores",
+       x = "Math Score",
+       y = "Density") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_grid(public ~ ., labeller = as_labeller(school_types))
+```
+**Figure 2:** A density plot for public and private schools. The dashed line represents the weighted average.  
+
+```{r gbm, echo = F, warning=F, include=FALSE}
+# Run GBM on private school students
+private_disposition <- create_disposition_view(aus_private)
+best_model_private <- train_gbm(private_disposition)
+
+# Run GBM on public school students
+public_disposition <- create_disposition_view(aus_public)
+best_model_public <- train_gbm(public_disposition)
+```
+
+\begin{center}
+Private School Variables of Importance
+\end{center}
+```{r var_imp_private, echo = F}
+vi_private <- h2o.varimp(best_model_private)
+knitr::kable(head(vi_private),
+          format = "latex", booktabs = TRUE) %>%
+          kable_styling(latex_options = "basic")
+
+```
+**Table 1:**  
+
+\begin{center}
+Public School Variables of Importance
+\end{center}
+```{r var_imp_public, echo = F}
+vi_public <- h2o.varimp(best_model_public)
+knitr::kable(head(vi_public),
+          format = "latex", booktabs = TRUE) %>%
+          kable_styling(latex_options = "basic")
+
+```
+**Table 2:**  
+
+```{r box_comparison, echo=F}
+# Include weighted mean for box_plots as separate point
+weighted_points <- aus_public[!is.na(ST37Q05), .(w_mean = weighted.mean(math_score, W_FSTUWT/sum(W_FSTUWT))), 
+                                by = ST37Q05]
+# Plot score based on self-efficacy
+public_plot <- ggplot(public_disposition, aes(x = ST37Q05, y = math_score)) +
+  geom_boxplot(aes(fill = factor(ST37Q05))) +
+  geom_point(data = weighted_points, aes(x = ST37Q05, y = w_mean),
+             shape = 23, size = 3, fill = "black", inherit.aes=FALSE) +
+  labs(title = "Public: Self-Efficacy(Equation)",
+       x = "Confidence",
+       y = "Math Score") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("V. Conf.", "Conf.", "Not Conf.", "Not at all"))
+
+# Include weighted mean for box_plots as separate point
+weighted_points <- aus_private[!is.na(ST37Q05), .(w_mean = weighted.mean(math_score, W_FSTUWT/sum(W_FSTUWT))), 
+                                by = ST37Q05]
+# Plot score based on self-efficacy
+private_plot <- ggplot(private_disposition, aes(x = ST37Q05, y = math_score)) +
+  geom_boxplot(aes(fill = factor(ST37Q05))) +
+  geom_point(data = weighted_points, aes(x = ST37Q05, y = w_mean),
+             shape = 23, size = 3, fill = "black", inherit.aes=FALSE) +
+  labs(title = "Private: Self-Efficacy(Equation)",
+       x = "Confidence",
+       y = "Math Score") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("V. Conf.", "Conf.", "Not Conf.", "Not at all"))
+
+cowplot::plot_grid(public_plot, private_plot)
+```
+
+\begin{minipage}{0.5\textwidth}
+Public: Confidence in Solving Equation
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+Private: Confidence in Solving Equation
+\end{minipage}
+**Figure 3:**  
+
+\begin{minipage}{0.5\textwidth}
+```{r efficacy_breakdown, echo=F}
+# Get total number of each
+num_public <- nrow(public_disposition)
+num_private <- nrow(private_disposition)
+
+public_efficacy <- public_disposition[, .(percent = .N/num_public), by = (Self_Efficacy = ST37Q05)]
+private_efficacy <- private_disposition[, .(percent = .N/num_private), by = (Self_Efficacy = ST37Q05)]
+knitr::kable(public_efficacy,
+          format = "latex", booktabs = TRUE) %>%
+          kable_styling(latex_options = "basic")
+```
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+```{r private_eff_breakdown, echo=F,}
+knitr::kable(private_efficacy,
+          format = "latex", booktabs = TRUE) %>%
+          kable_styling(latex_options = "basic")
+
+```
+\end{minipage}
+**Table 3:**
+
+```{r disp_vars, echo=F}
+
+multiple_disp_pub <- public_disposition[, .(graph_knowledge = ST37Q04, scale_knowledge = ST37Q06)]
+
+efficacy <- multiple_disp_pub[, .(percent = .N/num_public), by = graph_knowledge]
+efficacy_pub <- ggplot(efficacy, aes(x = graph_knowledge, y = percent, label = percent)) +
+  geom_point() +
+  labs(title = "Public: Self-Efficacy (Graphs)",
+       x = "Confidence",
+       y = "Percent") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("V. Conf.", "Conf.", "Not Conf.", "Not at all")) + 
+  geom_text(aes(label=format(round(percent, 2), nsmall = 2)), hjust = -0.2, vjust = -0.1)
+
+
+multiple_disp_priv <- private_disposition[, .(graph_knowledge = ST37Q04, scale_knowledge = ST37Q06)]
+
+efficacy <- multiple_disp_priv[, .(percent = .N/num_private), by = graph_knowledge]
+efficacy_priv <- ggplot(efficacy, aes(x = graph_knowledge, y = percent, label = percent)) +
+  geom_point() +
+  labs(title = "Private: Self-Efficacy (Graphs)",
+       x = "Confidence",
+       y = "Percent") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("V. Conf.", "Conf.", "Not Conf.", "Not at all")) + 
+  geom_text(aes(label=format(round(percent, 2), nsmall = 2)), hjust = -0.2, vjust = -0.1)
+
+cowplot::plot_grid(efficacy_pub, efficacy_priv)
+
+```
+**Figure 4:**  
+
+```{r anxiety, echo = F} 
+# Include weighted mean for box_plots as separate point
+weighted_points <- aus_public[!is.na(ST42Q02), .(w_mean = weighted.mean(math_score, W_FSTUWT/sum(W_FSTUWT))), 
+                                by = ST42Q02]
+# Plot score based on self-efficacy
+public_plot <- ggplot(public_disposition, aes(x = ST42Q02, y = math_score)) +
+  geom_boxplot(aes(fill = factor(ST42Q02))) +
+  geom_point(data = weighted_points, aes(x = ST42Q02, y = w_mean),
+             shape = 23, size = 3, fill = "black", inherit.aes=FALSE) +
+  labs(title = "Public: Math Anxiety",
+       x = "Not Good at Math",
+       y = "Math Score") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("S. Agree", "Agree", "Disagree", "S. Disagree"))
+
+# Include weighted mean for box_plots as separate point
+weighted_points <- aus_private[!is.na(ST42Q02), .(w_mean = weighted.mean(math_score, W_FSTUWT/sum(W_FSTUWT))), 
+                                by = ST42Q02]
+# Plot score based on self-efficacy
+private_plot <- ggplot(private_disposition, aes(x = ST42Q02, y = math_score)) +
+  geom_boxplot(aes(fill = factor(ST42Q02))) +
+  geom_point(data = weighted_points, aes(x = ST42Q02, y = w_mean),
+             shape = 23, size = 3, fill = "black", inherit.aes=FALSE) +
+  labs(title = "Private: Math Anxiety",
+       x = "Not Good at Math",
+       y = "Math Score") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("S. Agree", "Agree", "Disagree", "S. Disagree"))
+
+cowplot::plot_grid(public_plot, private_plot)
+```
+**Figure 5:**  
+
+```{r enjoyment, echo=F}
+num_public <- aus_public[!is.na(ST29Q04), .N]
+num_private <- aus_private[!is.na(ST29Q04), .N]
+enjoyment <- aus_public[!is.na(ST29Q04), .(percent = .N/num_public), by = (enjoy = ST29Q04)]
+
+enjoyment_pub <- ggplot(enjoyment, aes(x = enjoy, y = percent, label = percent)) +
+  geom_point() +
+  labs(title = "Public: Math Enjoyment",
+       x = "Enjoyments Math",
+       y = "Percent") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("S. Agree", "Agree", "Disagree", "S. Disagree")) +
+  geom_text(aes(label=format(round(percent, 2), nsmall = 2)), hjust = -0.2, vjust = -0.1)
+
+enjoyment <- aus_private[!is.na(ST29Q04), .(percent = .N/num_private), by = (enjoy = ST29Q04)]
+
+enjoyment_priv <- ggplot(enjoyment, aes(x = enjoy, y = percent, label = percent)) +
+  geom_point() +
+  labs(title = "Private: Math Enjoyment",
+       x = "Enjoyments Math",
+       y = "Percent") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_discrete(guide = F) +
+  scale_x_discrete(labels = c("S. Agree", "Agree", "Disagree", "S. Disagree")) +
+  geom_text(aes(label=format(round(percent, 2), nsmall = 2)), hjust = -0.2, vjust = -0.1)
+
+cowplot::plot_grid(enjoyment_pub, enjoyment_priv)
+```
+**Figure 6:**  
 
 ## Discussion
 
-This is where you offer your interpretation of the results
-Use neutral language
-Don’t make sweeping generalisations that aren’t based on evidence
-This section should have your highest word count
+Include towards end of discussion or in the conclusion some of the results from other paper [@buckingham_2000].
+
+Australia's national average: `r round(national_avg, 0)`.  
+Average score for public schools: `r round(public_avg, 0)`.  
+Average score for private schools: `r round(private_avg, 0)`.  
 
 ## Conclusion
 
@@ -47,5 +327,3 @@ What are the main points to draw from the discussion?
 Is there further investigation warranted?
 
 ## References
-
-Does not count towards word count
