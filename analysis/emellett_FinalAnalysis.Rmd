@@ -333,7 +333,7 @@ Figure 4 continues to look at self-efficacy. Instead of assessing students’ co
 
 Apart from self-efficacy, math anxiety ranked fairly high as an importance variable for both models. The specific survey question was asking for a level of agreement with the statement, “I am just not good at mathematics”. The results in figure 5 show math anxiety as another psychological disposition that effects students’ math scores from public and private schools in a similar manner. 
 
-The final figure, figure 6, focuses on the student’s enjoyment level of mathematics. Note, this was not one of the more important variables for either model. Only about 10% of students do mathematics because they enjoy it. In fact, a majority of students disagree or strongly disagree with this statement. The breakdown of math anxiety for public and private schools is nearly identical in this figure. This is an interesting contrast to self-efficacy where there was a noticeable contrast between the two groups. 
+The final figure, figure 6, focuses on the student’s enjoyment level of mathematics. Note, this was not one of the more important variables for either model. Only about 10% of students do mathematics because they enjoy it. In fact, a majority of students disagree or strongly disagree with this statement. The breakdown of math anxiety for public and private schools is nearly identical in this figure. This is an interesting contrast to self-efficacy where there was a noticeable difference between the two groups. 
 
 
 ## Conclusion
